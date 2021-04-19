@@ -64,7 +64,7 @@ parser.add_argument('--validation_epoch', default=2, type=int,
                     help='Output validation information every n iterations. If -1, do no validation.')
 parser.add_argument('--keep_latest', dest='keep_latest', action='store_true',
                     help='Only keep the latest checkpoint instead of each one.')
-parser.add_argument('--keep_latest_interval', default=100000, type=int,
+parser.add_argument('--keep_latest_interval', default=0, type=int,
                     help='When --keep_latest is on, don\'t delete the latest file at these intervals. This should be a multiple of save_interval or 0.')
 parser.add_argument('--dataset', default=None, type=str,
                     help='If specified, override the dataset specified in the config with this one (example: coco2017_dataset).')
@@ -78,7 +78,8 @@ parser.add_argument('--batch_alloc', default=None, type=str,
                     help='If using multiple GPUS, you can set this to be a comma separated list detailing which GPUs should get what local batch size (It should add up to your total batch size).')
 parser.add_argument('--no_autoscale', dest='autoscale', action='store_false',
                     help='YOLACT will automatically scale the lr and the number of iterations depending on the batch size. Set this if you want to disable that.')
-
+parser.add_argument('--dataset_path', default=None,
+                    help='In case of changes in image location. Leave as None to read this from config')
 parser.set_defaults(keep_latest=False, log=True, log_gpu=False, interrupt=True, autoscale=True)
 args = parser.parse_args()
 
@@ -87,6 +88,9 @@ if args.config is not None:
 
 if args.dataset is not None:
     set_dataset(args.dataset)
+
+if args.dataset_path is not None:
+    set_dataset_path(args.dataset_path)
 
 if args.autoscale and args.batch_size != 8:
     factor = args.batch_size / 8
@@ -170,9 +174,10 @@ class CustomDataParallel(nn.DataParallel):
         return out
 
 def train():
+    # first make directory if there isn't one
     if not os.path.exists(args.save_folder):
         os.mkdir(args.save_folder)
-
+    # datasets must be in COCO dataset forms
     dataset = COCODetection(image_path=cfg.dataset.train_images,
                             info_file=cfg.dataset.train_info,
                             transform=SSDAugmentation(MEANS))
@@ -356,7 +361,8 @@ def train():
                 if iteration % args.save_interval == 0 and iteration != args.start_iter:
                     if args.keep_latest:
                         latest = SavePath.get_latest(args.save_folder, cfg.name)
-
+                        # for saving only the latest weights every interval
+                    # wandb save weight for every interval
                     print('Saving state, iter:', iteration)
                     yolact_net.save_weights(save_path(epoch, iteration))
 
@@ -369,6 +375,7 @@ def train():
             if args.validation_epoch > 0:
                 if epoch % args.validation_epoch == 0 and epoch > 0:
                     compute_validation_map(epoch, iteration, yolact_net, val_dataset, log if args.log else None)
+                    #compute_validation_map evaluates every 'validation_epoch' =>maybe for wandb?
         
         # Compute validation mAP after training is finished
         compute_validation_map(epoch, iteration, yolact_net, val_dataset, log if args.log else None)
@@ -378,7 +385,7 @@ def train():
             
             # Delete previous copy of the interrupted network so we don't spam the weights folder
             SavePath.remove_interrupt(args.save_folder)
-            
+            #wandb save here also, in case of keyboard interrupt
             yolact_net.save_weights(save_path(epoch, repr(iteration) + '_interrupt'))
         exit()
 

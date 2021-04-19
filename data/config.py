@@ -172,7 +172,18 @@ pascal_sbd_dataset = dataset_base.copy({
     'class_names': PASCAL_CLASSES,
 })
 
+CRACK_CLASSES = ('crack')
+crack_dataset = dataset_base.copy({
+    'name': 'Crack',
 
+    'train_images': './data/crack_dataset/train',
+    'train_info': './data/crack_dataset/train.json',
+
+    'valid_images': './data/crack_dataset/test',
+    'valid_info': './data/crack_datset/test.json',
+
+    'class_names': CRACK_CLASSES,
+})
 
 
 
@@ -251,6 +262,7 @@ resnet101_dcn_inter3_backbone = resnet101_backbone.copy({
     'name': 'ResNet101_DCN_Interval3',
     'args': ([3, 4, 23, 3], [0, 4, 23, 3], 3),
 })
+
 
 resnet50_backbone = resnet101_backbone.copy({
     'name': 'ResNet50',
@@ -804,10 +816,18 @@ yolact_plus_resnet50_config = yolact_plus_base_config.copy({
         'use_square_anchors': False,
     }),
 })
+crack_config = yolact_plus_base_config.copy({
+    'name': 'crack',
+    'dataset': crack_dataset,
+    'num_classes': 1,
+    'max_size': 400,
 
+
+})
 
 # Default config
 cfg = yolact_base_config.copy()
+#cfg = crack_config.copy() #not needed yet!
 
 def set_cfg(config_name:str):
     """ Sets the active config. Works even if cfg is already imported! """
@@ -824,3 +844,15 @@ def set_dataset(dataset_name:str):
     """ Sets the dataset of the current config. """
     cfg.dataset = eval(dataset_name)
     
+def set_dataset_path(path:str):
+    """Sets the absolute path of dataset"""
+    global cfg
+    cfg=cfg.copy({
+    # Training images and annotations
+    'train_images': path + '/train',
+    'train_info':   path + '/train.json',
+
+    # Validation images and annotations.
+    'valid_images': path + '/test',
+    'valid_info':   path + '/test.json',
+    })
