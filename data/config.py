@@ -856,3 +856,4 @@ def set_dataset_path(dataset_path:str):
     'valid_images': '{}/test/images/'.format(dataset_path),
     'valid_info':   '{}/test.json'.format(dataset_path),
     })
+    print(cfg.dataset)
