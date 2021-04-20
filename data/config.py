@@ -847,7 +847,7 @@ def set_dataset(dataset_name:str):
 def set_dataset_path(dataset_path:str):
     """Sets the absolute path of dataset"""
     global cfg
-    cfg=cfg.copy({
+    cfg.dataset=cfg.dataset.copy({
     # Training images and annotations
     'train_images': '{}/train'.format(dataset_path),
     'train_info':   '{}/train.json'.format(dataset_path),
