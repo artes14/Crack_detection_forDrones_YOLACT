@@ -844,15 +844,15 @@ def set_dataset(dataset_name:str):
     """ Sets the dataset of the current config. """
     cfg.dataset = eval(dataset_name)
     
-def set_dataset_path(path:str):
+def set_dataset_path(dataset_path:str):
     """Sets the absolute path of dataset"""
     global cfg
     cfg=cfg.copy({
     # Training images and annotations
-    'train_images': path + '/train',
-    'train_info':   path + '/train.json',
+    'train_images': '{}/train'.format(dataset_path),
+    'train_info':   '{}/train.json'.format(dataset_path),
 
     # Validation images and annotations.
-    'valid_images': path + '/test',
-    'valid_info':   path + '/test.json',
+    'valid_images': '{}/test'.format(dataset_path),
+    'valid_info':   '{}/test.json'.format(dataset_path),
     })
