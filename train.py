@@ -86,11 +86,11 @@ args = parser.parse_args()
 if args.config is not None:
     set_cfg(args.config)
 
-if args.dataset is not None:
-    set_dataset(args.dataset)
-
 if args.dataset_path is not None:
     set_dataset_path(args.dataset_path)
+
+if args.dataset is not None:
+    set_dataset(args.dataset)
 
 if args.autoscale and args.batch_size != 8:
     factor = args.batch_size / 8
