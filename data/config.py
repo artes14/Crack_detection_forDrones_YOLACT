@@ -849,10 +849,10 @@ def set_dataset_path(dataset_path:str):
     global cfg
     cfg.dataset=crack_dataset.copy({
     # Training images and annotations
-    'train_images': '{}/train'.format(dataset_path),
+    'train_images': '{}/train/'.format(dataset_path),
     'train_info':   '{}/train.json'.format(dataset_path),
 
     # Validation images and annotations.
-    'valid_images': '{}/test'.format(dataset_path),
+    'valid_images': '{}/test/'.format(dataset_path),
     'valid_info':   '{}/test.json'.format(dataset_path),
     })
