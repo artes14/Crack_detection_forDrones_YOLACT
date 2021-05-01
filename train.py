@@ -20,6 +20,7 @@ import torch.utils.data as data
 import numpy as np
 import argparse
 import datetime
+import colorstrparser as colorstr
 
 # Oof
 import eval as eval_script
@@ -30,7 +31,7 @@ def str2bool(v):
 
 parser = argparse.ArgumentParser(
     description='Yolact Training Script')
-parser.add_argument('--batch_size', default=8, type=int,
+parser.add_argument('--batch_size', default=2, type=int,
                     help='Batch size for training')
 parser.add_argument('--resume', default=None, type=str,
                     help='Checkpoint state_dict file to resume training from. If this is "interrupt"'\
@@ -56,9 +57,9 @@ parser.add_argument('--log_folder', default='logs/',
                     help='Directory for saving logs.')
 parser.add_argument('--config', default=None,
                     help='The config object to use.')
-parser.add_argument('--save_interval', default=10000, type=int,
+parser.add_argument('--save_interval', default=1000, type=int,
                     help='The number of iterations between saving the model.')
-parser.add_argument('--validation_size', default=5000, type=int,
+parser.add_argument('--validation_size', default=500, type=int,
                     help='The number of images to use for validation.')
 parser.add_argument('--validation_epoch', default=2, type=int,
                     help='Output validation information every n iterations. If -1, do no validation.')
@@ -174,6 +175,12 @@ class CustomDataParallel(nn.DataParallel):
         return out
 
 def train():
+    try:
+        import wandb
+    except ImportError:
+        wandb=None
+        prefix = colorstr('wandb: ')
+        args.info(f"{prefix} Install Weights & Biases for YOLOv5 logging with 'pip install wandb' (recommended)")
     # first make directory if there isn't one
     if not os.path.exists(args.save_folder):
         os.mkdir(args.save_folder)
@@ -192,7 +199,9 @@ def train():
     yolact_net = Yolact()
     net = yolact_net
     net.train()
-
+    if wandb and wandb.run is None:
+        wandb_run=wandb.init(resume="allow", name='YOLACT-tr', project='YOLACT')
+        wandb.watch(net, log='all')
     if args.log:
         log = Log(cfg.name, args.log_folder, dict(args._get_kwargs()),
             overwrite=(args.resume is None), log_gpu_stats=args.log_gpu)
@@ -333,15 +342,20 @@ def train():
                 # Exclude graph setup from the timing information
                 if iteration != args.start_iter:
                     time_avg.add(elapsed)
+                # every 10 iter is too short....
+                if iteration % 100 == 0:
 
-                if iteration % 10 == 0:
                     eta_str = str(datetime.timedelta(seconds=(cfg.max_iter-iteration) * time_avg.get_avg())).split('.')[0]
                     
                     total = sum([loss_avgs[k].get_avg() for k in losses])
                     loss_labels = sum([[k, loss_avgs[k].get_avg()] for k in loss_types if k in losses], [])
-                    
+
                     print(('[%3d] %7d ||' + (' %s: %.3f |' * len(losses)) + ' T: %.3f || ETA: %s || timer: %.3f')
                             % tuple([epoch, iteration] + loss_labels + [total, eta_str, elapsed]), flush=True)
+                    loss_dic={k:loss_avgs[k].get_avg() for k in loss_types if k in losses}
+                    loss_dic.update({'lr':cur_lr, 'time':elapsed})
+                    if wandb:
+                        wandb.log(loss_dic, step=iteration)
 
                 if args.log:
                     precision = 5
@@ -361,6 +375,7 @@ def train():
                 if iteration % args.save_interval == 0 and iteration != args.start_iter:
                     if args.keep_latest:
                         latest = SavePath.get_latest(args.save_folder, cfg.name)
+
                         # for saving only the latest weights every interval
                     # wandb save weight for every interval
                     print('Saving state, iter:', iteration)
@@ -370,17 +385,22 @@ def train():
                         if args.keep_latest_interval <= 0 or iteration % args.keep_latest_interval != args.save_interval:
                             print('Deleting old save...')
                             os.remove(latest)
-            
-            # This is done per epoch
+
+            # This is done per epoch======================================================================================
             if args.validation_epoch > 0:
                 if epoch % args.validation_epoch == 0 and epoch > 0:
                     compute_validation_map(epoch, iteration, yolact_net, val_dataset, log if args.log else None)
-                    #compute_validation_map evaluates every 'validation_epoch' =>maybe for wandb?
+            # log per epoch ==> , 'loss-prototype', 'loss-coeffDiversity', 'loss-classExist',
+            tags=['loss-boxLocal', 'loss-classConf', 'loss-Mask','loss-semanticSeg', 'lr', 'elapsedTime']
+
+            #compute_validation_map evaluates every 'validation_epoch' =>maybe for wandb?
         
         # Compute validation mAP after training is finished
         compute_validation_map(epoch, iteration, yolact_net, val_dataset, log if args.log else None)
+        wandb.run.finish() if wandb and wandb.run else None
     except KeyboardInterrupt:
         if args.interrupt:
+            wandb.run.finish() if wandb and wandb.run else None
             print('Stopping early. Saving network...')
             
             # Delete previous copy of the interrupted network so we don't spam the weights folder

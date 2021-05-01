@@ -28,6 +28,7 @@ from PIL import Image
 
 import matplotlib.pyplot as plt
 import cv2
+import resize
 
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
@@ -41,7 +42,7 @@ def parse_args(argv=None):
     parser = argparse.ArgumentParser(
         description='YOLACT COCO Evaluation')
     parser.add_argument('--trained_model',
-                        default='weights/ssd300_mAP_77.43_v2.pth', type=str,
+                        default='weights/crack_2_10395.pth', type=str,
                         help='Trained state_dict file path to open. If "interrupt", this will open the interrupt file.')
     parser.add_argument('--top_k', default=5, type=int,
                         help='Further restrict the number of predictions to parse')
@@ -103,7 +104,7 @@ def parse_args(argv=None):
                         help='A path to a video to evaluate on. Passing in a number will use that index webcam.')
     parser.add_argument('--video_multiframe', default=1, type=int,
                         help='The number of frames to evaluate in parallel to make videos play at higher fps.')
-    parser.add_argument('--score_threshold', default=0, type=float,
+    parser.add_argument('--score_threshold', default=0.5, type=float,
                         help='Detections with a score under this threshold will not be considered. This currently only works in display mode.')
     parser.add_argument('--dataset', default=None, type=str,
                         help='If specified, override the dataset specified in the config with this one (example: coco2017_dataset).')
@@ -113,7 +114,8 @@ def parse_args(argv=None):
                         help='When displaying / saving video, draw the FPS on the frame')
     parser.add_argument('--emulate_playback', default=False, dest='emulate_playback', action='store_true',
                         help='When saving a video, emulate the framerate that you\'d get running in real-time mode.')
-
+    parser.add_argument('--cropsize', default=None, type=int,
+                        help='When in need of cropping images to evaluate in small pieces')
     parser.set_defaults(no_bar=False, display=False, resume=False, output_coco_json=False, output_web_json=False, shuffle=False,
                         benchmark=False, no_sort=False, no_hash=False, mask_proto_debug=False, crop=True, detect=False, display_fps=False,
                         emulate_playback=False)
@@ -609,6 +611,28 @@ def evalimage(net:Yolact, path:str, save_path:str=None):
     else:
         cv2.imwrite(save_path, img_numpy)
 
+
+def evalcropimage(net: Yolact, cropsize: int, path: str, save_path: str = None):
+    cnt=0
+    for img in resize.crop_image(path,cropsize):
+        frame = torch.from_numpy(img).cuda().float()
+        batch = FastBaseTransform()(frame.unsqueeze(0))
+        preds = net(batch)
+        out_path=save_path+'_'+str(cnt)+'.png'
+        img_numpy = prep_display(preds, frame, None, None, undo_transform=False)
+
+        if save_path is None:
+            img_numpy = img_numpy[:, :, (2, 1, 0)]
+
+        if save_path is None:
+            plt.imshow(img_numpy)
+            plt.title(path)
+            plt.show()
+        else:
+            cv2.imwrite(out_path, img_numpy)
+            cnt+=1
+        print(path + ' -> ' + out_path)
+
 def evalimages(net:Yolact, input_folder:str, output_folder:str):
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)
@@ -617,11 +641,17 @@ def evalimages(net:Yolact, input_folder:str, output_folder:str):
     for p in Path(input_folder).glob('*'): 
         path = str(p)
         name = os.path.basename(path)
-        name = '.'.join(name.split('.')[:-1]) + '.png'
-        out_path = os.path.join(output_folder, name)
+        if args.cropsize == None:
+            name = '.'.join(name.split('.')[:-1]) + '.png'
+            out_path = os.path.join(output_folder, name)
+            evalimage(net, path, out_path)
+            print(path + ' -> ' + out_path)
+        else:
+            name = '.'.join(name.split('.')[:-1])
+            out_path = os.path.join(output_folder,name)
+            if cv2.imread(path).shape[1] > args.cropsize or cv2.imread(path).shape[0] > args.cropsize:
+                evalcropimage(net, args.cropsize, path, out_path)
 
-        evalimage(net, path, out_path)
-        print(path + ' -> ' + out_path)
     print('Done.')
 
 from multiprocessing.pool import ThreadPool

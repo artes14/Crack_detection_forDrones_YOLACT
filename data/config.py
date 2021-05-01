@@ -172,15 +172,15 @@ pascal_sbd_dataset = dataset_base.copy({
     'class_names': PASCAL_CLASSES,
 })
 
-CRACK_CLASSES = ('crack')
+CRACK_CLASSES = ("crack")
 crack_dataset = dataset_base.copy({
     'name': 'Crack',
 
-    'train_images': './data/crack_dataset/train',
-    'train_info': './data/crack_dataset/train.json',
+    'train_images': './crack_dataset/train/images/',
+    'train_info': './crack_dataset/train.json',
 
-    'valid_images': './data/crack_dataset/test',
-    'valid_info': './data/crack_datset/test.json',
+    'valid_images': './crack_dataset/test/images/',
+    'valid_info': './crack_dataset/test.json',
 
     'class_names': CRACK_CLASSES,
 })
@@ -816,18 +816,28 @@ yolact_plus_resnet50_config = yolact_plus_base_config.copy({
         'use_square_anchors': False,
     }),
 })
-crack_config = yolact_plus_base_config.copy({
+crack_config = yolact_base_config.copy({
     'name': 'crack',
     'dataset': crack_dataset,
-    'num_classes': 1,
-    'max_size': 400,
-
-
+    'num_classes': 2,
+    'max_size': 448,
+})
+crack_plusbase_config = yolact_plus_base_config.copy({
+    'name': 'crack',
+    'dataset': crack_dataset,
+    'num_classes': 2,
+    'max_size': 448,
+})
+crack_res50_config = yolact_resnet50_config.copy({
+    'name': 'crack',
+    'dataset': crack_dataset,
+    'num_classes': 2,
+    'max_size': 448,
 })
 
 # Default config
-cfg = yolact_base_config.copy()
-#cfg = crack_config.copy() #not needed yet!
+#cfg = yolact_base_config.copy()
+cfg = crack_config.copy() #not needed yet!
 
 def set_cfg(config_name:str):
     """ Sets the active config. Works even if cfg is already imported! """
