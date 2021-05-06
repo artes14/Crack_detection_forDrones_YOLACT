@@ -22,8 +22,8 @@ dependencies:
   - matplotlib
   - git # to download COCO dataset
   - curl # to download COCO dataset
-  - unzip # to download COCO dataset
-  - conda-forge::bash # to download COCO dataset
+  #- unzip # to download COCO dataset
+  #- conda-forge::bash # to download COCO dataset
   - pip:
     - opencv-python 
     - pillow <7.0 # bug PILLOW_VERSION in torchvision, must be < 7.0 until torchvision is upgraded

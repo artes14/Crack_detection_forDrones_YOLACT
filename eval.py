@@ -28,7 +28,7 @@ from PIL import Image
 
 import matplotlib.pyplot as plt
 import cv2
-import resize
+import imgmod
 
 def str2bool(v):
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
@@ -614,7 +614,7 @@ def evalimage(net:Yolact, path:str, save_path:str=None):
 
 def evalcropimage(net: Yolact, cropsize: int, path: str, save_path: str = None):
     cnt=0
-    for img in resize.crop_image(path,cropsize):
+    for img in imgmod.crop_image(path, cropsize):
         frame = torch.from_numpy(img).cuda().float()
         batch = FastBaseTransform()(frame.unsqueeze(0))
         preds = net(batch)
