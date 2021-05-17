@@ -48,6 +48,9 @@ def postprocess(det_output, w, h, batch_idx=0, interpolation_mode='bilinear',
         
         if dets['score'].size(0) == 0:
             return [torch.Tensor()] * 4
+
+        # TODO: added this for sorting out small masks
+        # no need for det['mask'] bc mask score is supported in yolact++
     
     # Actually extract everything from dets now
     classes = dets['class']
