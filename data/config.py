@@ -817,6 +817,8 @@ yolact_plus_resnet50_config = yolact_plus_base_config.copy({
     }),
 })
 crack_config = yolact_base_config.copy({
+    'pred_aspect_ratios': [ [[1, 1/4, 4]] ]*5,
+    'discard_mask_area': 500,
     'name': 'crack',
     'dataset': crack_dataset,
     'num_classes': 2,

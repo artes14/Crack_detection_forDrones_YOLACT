@@ -89,6 +89,55 @@ def example(img):
 
 def blur(img):
     last_time=time.time()
+    fig, ax = plt.subplots(3)
+    # green thres
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    lower_g = np.array([33, 25, 10])
+    higher_g = np.array([80, 255, 255])
+
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (100, 100))
+    kernel_o = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (4, 4))
+
+    mask = cv2.inRange(hsv, lower_g, higher_g)
+    mask=cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel_o)
+    mask = cv2.blur(mask, (100, 100), 10)
+    mask = cv2.dilate(mask, kernel, 100)
+    mask = cv2.blur(mask, (100, 100), 10)
+    #cv2.dilate(mask, kernel, 100)
+    green=cv2.bitwise_and(img,img, mask)
+    green=cv2.erode(green, kernel,100)
+    cv2.imwrite('data/eval3/crack_9_mdil.jpg', mask)
+    #mask=cv2.blur(mask,(15,15),10)
+    #mask2 = cv2.blur(mask, (60, 60), 0)
+    mask2 = cv2.blur(mask,(50, 50),0)
+
+    mask_rgb=img.copy()
+    mask_rgb[:,:,0]=mask2
+    mask_rgb[:, :, 1] = mask2
+    mask_rgb[:, :, 2] = mask2
+    blur=cv2.blur(img,(60,60),0)
+
+    blur = cv2.blur(blur, (60, 60), 0)
+    out=img.copy()
+    out[mask>0]=blur[mask>0]
+    cv2.imwrite('data/eval3/crack_9_blr.jpg', out)
+
+    # morphology - dilation
+
+    dilation=cv2.dilate(out, kernel_o, 100)
+    dilation_mask=cv2.dilate(mask,kernel,100)
+    out=img.copy()
+    out[dilation_mask>0]=dilation[dilation_mask>0]
+    cv2.imwrite('data/eval3/crack_9_blr_dil.jpg',out)
+
+    # for delayed time
+    cur_time = time.time()
+    elapsed = cur_time - last_time
+    print(elapsed)
+
+def blur_o(img):
+    last_time=time.time()
+    #blur = cv2.bilateralFilter(img, 30, 75, 75)
     hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
     # green thres
     lower_g = np.array([33, 25, 10])
@@ -96,19 +145,35 @@ def blur(img):
 
     # mask of image where there's green
     mask = cv2.inRange(hsv, lower_g, higher_g)
-    cv2.imwrite('data/eval/crack_9_mask.jpg', mask)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (30, 30))
     mask=cv2.blur(mask,(15,15),10)
-    mask2 = cv2.blur(mask, (60, 60), 0)
-    cv2.imwrite('data/eval/crack_9_mask2.jpg', mask2)
+    #mask2 = cv2.blur(mask, (60, 60), 0)
+    mask2 = cv2.blur(mask,(50, 50),0)
+    mask2 = cv2.dilate(mask, kernel, 100)
+    mask2 = cv2.blur(mask, (100, 100), 10)
+
     mask_rgb=img.copy()
     mask_rgb[:,:,0]=mask2
     mask_rgb[:, :, 1] = mask2
     mask_rgb[:, :, 2] = mask2
-    blur=cv2.blur(img,(60,60),0)
-    cv2.imwrite('data/eval/crack_9_blur.jpg', blur)
+    #blur=cv2.blur(img,(60,60),0)
+
+    blur = cv2.blur(img, (60, 60), 0)
     out=img.copy()
     out[mask2>0]=blur[mask2>0]
-    cv2.imwrite('data/eval/crack_9_rmg.jpg', out)
+    cv2.imwrite('data/eval2/crack_9_rmg.jpg', out)
+
+    # morphology - dilation
+
+    dilation=cv2.erode(out, kernel, 100)
+    dilation_mask=cv2.dilate(mask2,kernel,100)
+    out=img.copy()
+    out[dilation_mask>0]=dilation[dilation_mask>0]
+    cv2.imwrite('data/eval2/crack_9_dil.jpg',out)
+    # for delayed time
     cur_time = time.time()
     elapsed = cur_time - last_time
     print(elapsed)
+
+
+blur_o(cv2.imread('data/eval/crack_9.jpg'))
