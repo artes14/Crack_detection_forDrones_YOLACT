@@ -174,6 +174,3 @@ def blur_o(img):
     cur_time = time.time()
     elapsed = cur_time - last_time
     print(elapsed)
-
-
-blur_o(cv2.imread('data/eval/crack_9.jpg'))
