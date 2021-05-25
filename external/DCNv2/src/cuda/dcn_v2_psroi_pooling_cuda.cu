@@ -31,7 +31,7 @@ inline int GET_BLOCKS(const int N)
 }
 
 template <typename T>
-__device__ T bilinear_interp_cuda(
+__device__ T bilinear_interp(
     const T *data,
     const T x,
     const T y,
@@ -56,7 +56,7 @@ __device__ T bilinear_interp_cuda(
 }
 
 template <typename T>
-__global__ void DeformablePSROIPoolForwardKernelCuda(
+__global__ void DeformablePSROIPoolForwardKernel(
     const int count,
     const T *bottom_data,
     const T spatial_scale,
@@ -135,7 +135,7 @@ __global__ void DeformablePSROIPoolForwardKernelCuda(
         w = min(max(w, 0.), width - 1.);
         h = min(max(h, 0.), height - 1.);
         int c = (ctop * group_size + gh) * group_size + gw;
-        T val = bilinear_interp_cuda(offset_bottom_data + c * height * width, w, h, width, height);
+        T val = bilinear_interp(offset_bottom_data + c * height * width, w, h, width, height);
         sum += val;
         count++;
       }
@@ -146,7 +146,7 @@ __global__ void DeformablePSROIPoolForwardKernelCuda(
 }
 
 template <typename T>
-__global__ void DeformablePSROIPoolBackwardAccKernelCuda(
+__global__ void DeformablePSROIPoolBackwardAccKernel(
     const int count,
     const T *top_diff,
     const T *top_count,
@@ -315,7 +315,7 @@ dcn_v2_psroi_pooling_cuda_forward(const at::Tensor &input,
   dim3 block(512);
 
   AT_DISPATCH_FLOATING_TYPES(input.type(), "dcn_v2_psroi_pooling_cuda_forward", [&] {
-    DeformablePSROIPoolForwardKernelCuda<scalar_t><<<grid, block, 0, stream>>>(
+    DeformablePSROIPoolForwardKernel<scalar_t><<<grid, block, 0, stream>>>(
         out_size,
         input.contiguous().data<scalar_t>(),
         spatial_scale,
@@ -389,7 +389,7 @@ dcn_v2_psroi_pooling_cuda_backward(const at::Tensor &out_grad,
   cudaStream_t stream = at::cuda::getCurrentCUDAStream();
 
   AT_DISPATCH_FLOATING_TYPES(out_grad.type(), "dcn_v2_psroi_pooling_cuda_backward", [&] {
-    DeformablePSROIPoolBackwardAccKernelCuda<scalar_t><<<grid, block, 0, stream>>>(
+    DeformablePSROIPoolBackwardAccKernel<scalar_t><<<grid, block, 0, stream>>>(
         out_size,
         out_grad.contiguous().data<scalar_t>(),
         top_count.contiguous().data<scalar_t>(),
