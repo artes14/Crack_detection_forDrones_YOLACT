@@ -81,6 +81,8 @@ parser.add_argument('--no_autoscale', dest='autoscale', action='store_false',
                     help='YOLACT will automatically scale the lr and the number of iterations depending on the batch size. Set this if you want to disable that.')
 parser.add_argument('--dataset_path', default=None,
                     help='In case of changes in image location. Leave as None to read this from config')
+parser.add_argument('--run_name', default='yolact-tr', type=str,
+                    help='Saving names for wandb. Default name is yolact-tr.')
 parser.set_defaults(keep_latest=False, log=True, log_gpu=False, interrupt=True, autoscale=True)
 args = parser.parse_args()
 
@@ -200,7 +202,7 @@ def train():
     net = yolact_net
     net.train()
     if wandb and wandb.run is None:
-        wandb_run=wandb.init(resume="allow", name='YOLACT-tr', project='YOLACT')
+        wandb_run=wandb.init(resume="allow", name=args.run_name, project='YOLACT')
         wandb.watch(net, log='all')
     if args.log:
         log = Log(cfg.name, args.log_folder, dict(args._get_kwargs()),
