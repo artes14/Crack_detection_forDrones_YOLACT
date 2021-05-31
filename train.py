@@ -202,7 +202,7 @@ def train():
     net = yolact_net
     net.train()
     if wandb and wandb.run is None:
-        wandb_run=wandb.init(resume="allow", name=args.run_name, project='YOLACT')
+        wandb_run=wandb.init(resume="allow", name=args.run_name, project='YOLACT_0531')
         wandb.watch(net, log='all')
     if args.log:
         log = Log(cfg.name, args.log_folder, dict(args._get_kwargs()),
@@ -357,7 +357,7 @@ def train():
                     loss_dic={k:loss_avgs[k].get_avg() for k in loss_types if k in losses}
                     loss_dic.update({'lr':cur_lr, 'time':elapsed})
                     if wandb:
-                        wandb.log(loss_dic, step=iteration)
+                        wandb.log(loss_dic, step=epoch)
 
                 if args.log:
                     precision = 5
