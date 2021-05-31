@@ -356,8 +356,7 @@ def train():
                             % tuple([epoch, iteration] + loss_labels + [total, eta_str, elapsed]), flush=True)
                     loss_dic={k:loss_avgs[k].get_avg() for k in loss_types if k in losses}
                     loss_dic.update({'lr':cur_lr, 'time':elapsed})
-                    if wandb:
-                        wandb.log(loss_dic, step=epoch)
+
 
                 if args.log:
                     precision = 5
@@ -387,7 +386,8 @@ def train():
                         if args.keep_latest_interval <= 0 or iteration % args.keep_latest_interval != args.save_interval:
                             print('Deleting old save...')
                             os.remove(latest)
-
+            if wandb:
+                wandb.log(loss_dic, step=epoch)
             # This is done per epoch======================================================================================
             if args.validation_epoch > 0:
                 if epoch % args.validation_epoch == 0 and epoch > 0:
