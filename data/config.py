@@ -1,6 +1,8 @@
-from backbone import ResNetBackbone, VGGBackbone, ResNetBackboneGN, DarkNetBackbone
 from math import sqrt
+
 import torch
+
+from backbone import ResNetBackbone, VGGBackbone, ResNetBackboneGN, DarkNetBackbone
 
 # for making bounding boxes pretty
 COLORS = ((244,  67,  54),
@@ -177,7 +179,7 @@ crack_dataset = dataset_base.copy({
     'name': 'Crack',
 
     'train_images': './crack_dataset/train/images/',
-    'train_info': './crack_dataset/train.json',
+    'train_info': './crack_dataset/new_masks.json',
 
     'valid_images': './crack_dataset/test/images/',
     'valid_info': './crack_dataset/test.json',
@@ -816,30 +818,64 @@ yolact_plus_resnet50_config = yolact_plus_base_config.copy({
         'use_square_anchors': False,
     }),
 })
+#====================== CUSTOM ======================================================
 crack_config = yolact_base_config.copy({
     'pred_aspect_ratios': [ [[1, 1/4, 4]] ]*5,
     'discard_mask_area': 500,
-    'name': 'crack',
+    'name': 'crack_base',
     'dataset': crack_dataset,
     'num_classes': 2,
     'max_size': 448,
 })
-crack_plusbase_config = yolact_plus_base_config.copy({
-    'name': 'crack',
+crack_base_config = crack_config.copy({
+    'name': 'crack_base'
+})
+crack_plus_base_config = yolact_plus_base_config.copy({
+    'name': 'crack_plus_base',
     'dataset': crack_dataset,
     'num_classes': 2,
     'max_size': 448,
+
+    'mask_type': mask_type.lincomb,
+    'use_class_existence_loss': True,
+    'class_existence_alpha': 1,
+})
+crack_plus_resnet50_base_config = yolact_plus_resnet50_config.copy({
+    'name': 'crack_plus_resnet50_base',
+    'dataset': crack_dataset,
+    'num_classes': 2,
+    'max_size': 448,
+
+    'mask_type': mask_type.lincomb,
+    'use_class_existence_loss': True,
+    'class_existence_alpha': 1,
 })
 crack_res50_config = yolact_resnet50_config.copy({
-    'name': 'crack',
+    'pred_aspect_ratios': [ [[1, 1/4, 4]] ]*5,
+    'discard_mask_area': 400,
+    'name': 'crack_res50',
+    'has_gt': True,
+    'dataset': crack_dataset,
+    'num_classes': 2,
+    'max_size': 448,
+})
+crack_darknet53_config = yolact_darknet53_config.copy({
+    'pred_aspect_ratios': [ [[1, 1/4, 4]] ]*5,
+    'discard_mask_area': 400,
+    'name': 'crack_darknet53',
+    'has_gt': True,
     'dataset': crack_dataset,
     'num_classes': 2,
     'max_size': 448,
 })
 
+
 # Default config
-#cfg = yolact_base_config.copy()
-cfg = crack_config.copy() #not needed yet!
+# cfg = yolact_base_config.copy()
+cfg = crack_config.copy()
+# cfg = crack_res50_config.copy() # why attempted to set storage error?
+# cfg = crack_darknet53_config.copy()
+# cfg = crack_plus_base_config.copy()
 
 def set_cfg(config_name:str):
     """ Sets the active config. Works even if cfg is already imported! """

@@ -126,6 +126,7 @@ class SavePath:
         model_name = '_'.join(params[:-2])
         epoch = params[-2]
         iteration = params[-1]
+        print(model_name)
         
         return SavePath(model_name, int(epoch), int(iteration))
 

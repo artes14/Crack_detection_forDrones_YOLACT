@@ -7,7 +7,7 @@ import torch.nn.functional as F
 import cv2
 import numpy as np
 from .config import cfg
-from pycocotools import mask as maskUtils
+#from pycocotools import mask as maskUtils
 import random
 
 def get_label_map():

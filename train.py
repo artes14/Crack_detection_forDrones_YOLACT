@@ -31,7 +31,7 @@ def str2bool(v):
 
 parser = argparse.ArgumentParser(
     description='Yolact Training Script')
-parser.add_argument('--batch_size', default=2, type=int,
+parser.add_argument('--batch_size', default=1, type=int,
                     help='Batch size for training')
 parser.add_argument('--resume', default=None, type=str,
                     help='Checkpoint state_dict file to resume training from. If this is "interrupt"'\
@@ -81,7 +81,7 @@ parser.add_argument('--no_autoscale', dest='autoscale', action='store_false',
                     help='YOLACT will automatically scale the lr and the number of iterations depending on the batch size. Set this if you want to disable that.')
 parser.add_argument('--dataset_path', default=None,
                     help='In case of changes in image location. Leave as None to read this from config')
-parser.add_argument('--run_name', default='yolact-tr', type=str,
+parser.add_argument('--run_name', default='crack_resnet5', type=str,
                     help='Saving names for wandb. Default name is yolact-tr.')
 parser.set_defaults(keep_latest=False, log=True, log_gpu=False, interrupt=True, autoscale=True)
 args = parser.parse_args()
@@ -202,7 +202,7 @@ def train():
     net = yolact_net
     net.train()
     if wandb and wandb.run is None:
-        wandb_run=wandb.init(resume="allow", name=args.run_name, project='YOLACT_0531')
+        wandb_run=wandb.init(resume="allow", name=args.run_name, project='YOLACT_crack')
         wandb.watch(net, log='all')
     if args.log:
         log = Log(cfg.name, args.log_folder, dict(args._get_kwargs()),
@@ -265,7 +265,7 @@ def train():
     data_loader = data.DataLoader(dataset, args.batch_size,
                                   num_workers=args.num_workers,
                                   shuffle=True, collate_fn=detection_collate,
-                                  pin_memory=True)
+                                  pin_memory=True, generator=torch.Generator(device='cuda'))
     
     
     save_path = lambda epoch, iteration: SavePath(cfg.name, epoch, iteration).get_path(root=args.save_folder)
@@ -381,19 +381,20 @@ def train():
                     # wandb save weight for every interval
                     print('Saving state, iter:', iteration)
                     yolact_net.save_weights(save_path(epoch, iteration))
+                    if wandb:
+                        wandb.log(loss_dic, step=iteration)
 
                     if args.keep_latest and latest is not None:
                         if args.keep_latest_interval <= 0 or iteration % args.keep_latest_interval != args.save_interval:
                             print('Deleting old save...')
                             os.remove(latest)
-            if wandb:
-                wandb.log(loss_dic, step=epoch)
+            #if wandb:
+                #wandb.log(loss_dic, step=epoch)
             # This is done per epoch======================================================================================
             if args.validation_epoch > 0:
                 if epoch % args.validation_epoch == 0 and epoch > 0:
                     compute_validation_map(epoch, iteration, yolact_net, val_dataset, log if args.log else None)
             # log per epoch ==> , 'loss-prototype', 'loss-coeffDiversity', 'loss-classExist',
-            tags=['loss-boxLocal', 'loss-classConf', 'loss-Mask','loss-semanticSeg', 'lr', 'elapsedTime']
 
             #compute_validation_map evaluates every 'validation_epoch' =>maybe for wandb?
         
@@ -521,7 +522,7 @@ def compute_validation_map(epoch, iteration, yolact_net, dataset, log:Log=None):
         val_info = eval_script.evaluate(yolact_net, dataset, train_mode=True)
         end = time.time()
 
-        if log is not None:
+        if log is not None and val_info is not None:
             log.log('val', val_info, elapsed=(end - start), epoch=epoch, iter=iteration)
 
         yolact_net.train()

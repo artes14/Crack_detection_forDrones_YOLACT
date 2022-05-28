@@ -29,8 +29,6 @@ if not use_jit:
 ScriptModuleWrapper = torch.jit.ScriptModule if use_jit else nn.Module
 script_method_wrapper = torch.jit.script_method if use_jit else lambda fn, _rcn=None: fn
 
-
-
 class Concat(nn.Module):
     def __init__(self, nets, extra_params):
         super().__init__()
@@ -487,7 +485,10 @@ class Yolact(nn.Module):
             if key.startswith('fpn.downsample_layers.'):
                 if cfg.fpn is not None and int(key.split('.')[2]) >= cfg.fpn.num_downsample:
                     del state_dict[key]
-        self.load_state_dict(state_dict)
+        try:
+            self.load_state_dict(state_dict)
+        except RuntimeError as e:
+            print('Ignoring "' + str(e) + '"')
 
     def init_weights(self, backbone_path):
         """ Initialize weights for training. """

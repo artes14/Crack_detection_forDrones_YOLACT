@@ -5,10 +5,12 @@ import glob
 import matplotlib.pyplot as plt
 import cv2
 import time
+import os
+from pathlib import Path
 def crop_image(img_path:str, crop_size:int, mode=None):
     img = cv2.imread(img_path)
     w,h,_=img.shape
-    if crop_size>w or crop_size>h:
+    if crop_size>=w or crop_size>=h:
         return img
     crop_image=[]
     for x in range(0,w-crop_size,crop_size):
@@ -16,6 +18,24 @@ def crop_image(img_path:str, crop_size:int, mode=None):
             crop_image.append(img[x:x+crop_size,y:y+crop_size])
     return crop_image
 
+def save_crop_images(img_folder:str, output_folder:str, crop_size:int):
+    if not os.path.exists(output_folder):
+        os.mkdir(output_folder)
+
+    print()
+    for p in Path(img_folder).glob('*'):
+        path = str(p) # normal img fullpath
+        name = os.path.basename(path) #c1
+        name = '.'.join(name.split('.')[:-1])
+        out_path = os.path.join(output_folder,name) #data/c1
+
+        print('Done.')
+        cnt=0
+        for img in crop_image(path, crop_size):
+            output_path=out_path+'_'+str(cnt)+'.png'
+            cv2.imwrite(output_path, img)
+            cnt+=1
+            print(path + ' -> ' + output_path)
 
 def rm_g(img):
     hsv=cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -137,14 +157,8 @@ def blur(img):
 
 def blur_o(img):
     last_time=time.time()
-    #blur = cv2.bilateralFilter(img, 30, 75, 75)
-    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
-    # green thres
-    lower_g = np.array([33, 25, 10])
-    higher_g = np.array([80, 255, 255])
+    mask = getmask_green(img)
 
-    # mask of image where there's green
-    mask = cv2.inRange(hsv, lower_g, higher_g)
     kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (30, 30))
     mask=cv2.blur(mask,(15,15),10)
     #mask2 = cv2.blur(mask, (60, 60), 0)
@@ -174,3 +188,22 @@ def blur_o(img):
     cur_time = time.time()
     elapsed = cur_time - last_time
     print(elapsed)
+def getmask_green(img):
+    hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+    # green thres
+    lower_g = np.array([33, 35, 10])
+    higher_g = np.array([80, 255, 255])
+
+    # mask of image where there's green
+    mask = cv2.inRange(hsv, lower_g, higher_g)
+    return mask
+def isgreen(img, img_green)->bool:
+    img=np.array(img)
+    img_green=np.array(img_green)
+    if img[img_green>0].any():
+        return True
+    else:
+        return False
+#def crack_width(img):
+
+
