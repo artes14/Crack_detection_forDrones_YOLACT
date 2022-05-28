@@ -1,3 +1,5 @@
+# Mod by Kwakhw to run on colab, and run with crack detection algorithm
+
 # **Y**ou **O**nly **L**ook **A**t **C**oefficien**T**s
 ```
     ██╗   ██╗ ██████╗ ██╗      █████╗  ██████╗████████╗
