@@ -1,4 +1,4 @@
-# Mod by Kwakhw to run on colab, and run with crack detection algorithm
+# Mod by Kwakhw to run on colab, and run crack width calculation algorithm
 
 # **Y**ou **O**nly **L**ook **A**t **C**oefficien**T**s
 ```
