@@ -118,6 +118,8 @@ for idx, data in enumerate(images):
     with open(cocodir, "w") as outfile:
         json.dump(coco_format, outfile)
 
+
+    # 이미지 확인용
     img_result = img_color.copy()
     coco_file=coco.COCO(cocodir)
     annIds = coco_file.getAnnIds(imgIds=[image_id-1], catIds=[1], iscrowd=None)

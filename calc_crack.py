@@ -4,6 +4,7 @@ import Crack
 import cv2
 import numpy as np
 import colorsys
+from scipy.stats import sem
 import imgmod
 from numpy import linalg
 import time
@@ -36,9 +37,8 @@ def otsu_thres( img):
     # img_thres=cv2.erode(img_thres,np.ones((5,5),np.uint8))
     return ret, img_thres
 
-color=(0, 0, 0.8)
-ima=cv2.imread('data/crack_laser_result1/DJI_0030_192_frame.png', cv2.IMREAD_GRAYSCALE)
-imge=cv2.imread('data/crack_laser_result1/DJI_0030_192.png')
+ima=cv2.imread('data/crack_laser_result1/DJI_0030_139_frame.png', cv2.IMREAD_GRAYSCALE)
+imge=cv2.imread('data/crack_laser_result1/DJI_0030_139.png')
 _, thr=otsu_thres(imge)
 crack=Crack.Crack(imge)
 cv2.imshow('thresholding', thr)
@@ -97,27 +97,100 @@ def convolute_pixel_kernel(img_eval, thin):
                 k = np.bitwise_and(roi, kern).sum()
                 ii = k / p
             i-=1
-            arr_out[x, y]=(i)*2-1
+            if i<2:
+                arr_out[y, x]=0
+            else:
+                arr_out[y, x]=(i-1)*2-1
             # draw ellipse on original imageA
             if num%print_iter==0:
                 color = hsv2rgb(clamp((number_of_colors-i)/number_of_colors, 0, 1),1,1)
                 img_out = cv2.ellipse(imge, (x,y), (i,i), 0, 0, 360, color)
             num += 1
     return arr_out, img_out
+
+def convolute_pixel_avg(img_eval, thin):
+    image = img_eval.copy()
+    skeleton = thin.copy()
+    (iH, iW) = image.shape[:2]
+    (mH, mW) = skeleton.shape[:2]
+    # N = 50
+    # total_sk = skeleton.sum()
+    # print_iter = (total_sk/255/N).__floor__()
+    if iH != mH and iW != mW:
+        print('different image and mask size')
+        return None
+    arr_out = np.zeros((iH, iW))
+    img_out = imge.copy()
+    sk_list=[]
+    for y in np.arange(0, iH):
+        for x in np.arange(0, iW):
+            if skeleton[y, x] == 0:
+                continue
+            else:
+                sk_list.append([x,y])
+    x_std, y_std=np.std(sk_list, axis=0)
+
+    # if horizontal crack
+    if x_std > y_std:
+        print("horizontal")
+        for x, y in sk_list:
+            i, j = x, y
+            pix=0
+            while i*j>0 and image[j,i]>0:
+                pix+=1
+                j+=1
+            jmax=j
+            i, j = x, y
+            while i*j>0 and image[j,i]>0:
+                pix+=1
+                j-=1
+            jmin=j
+            pix=pix-1
+            if pix>0:
+                arr_out[y, x]=pix
+                color = hsv2rgb(clamp((number_of_colors - pix) / number_of_colors, 0, 1), 1, 1)
+                img_out=cv2.line(img_out, (x,jmax), (x,jmin), color, 1)
+
+    # if vertical crack
+    else:
+        print("vertical")
+        for x, y in sk_list:
+            i, j = x, y
+            pix=0
+            while i*j>0 and image[j,i]>0:
+                pix+=1
+                i+=1
+            imax=i
+            i, j = x, y
+            while i*j>0 and image[j,i]>0:
+                pix+=1
+                i-=1
+            imin=i
+            pix=pix-1
+            if pix>0:
+                arr_out[y, x]=pix
+                color = hsv2rgb(clamp((number_of_colors - pix) / number_of_colors, 0, 1), 1, 1)
+                img_out=cv2.line(img_out, (imax,y), (imin,y), color, 1)
+    return arr_out, img_out
+
 def show_crack_color(color_num):
     color_show = imge.copy()
     colshow = color_show[:color_num*10, :100]
     colshow = cv2.resize(colshow, dsize = (100,color_num*20))
     for i in range(color_num):
-        crack_width = crack.calc_pix(93,40,9216)*(2*i+1)
+        # crack_width = crack.calc_pix(93,40,9216)*(2*i+1)
+        crack_width = crack.calc_pix(93,40,9216)*(i)
         col = hsv2rgb(clamp((color_num-i)/color_num, 0, 1),1,1)
         colshow = cv2.rectangle(colshow, (0,i*20), (100,(i+1)*20), col, -1)
         colshow = cv2.putText(colshow, str(crack_width)[:4], (10,(i+1)*20-4), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0,0,0), 1, cv2.LINE_AA)
     return colshow
 
 cv2.imshow('color map per width', show_crack_color(number_of_colors))
-# cv2.imwrite('/colormap.png', show_crack_color(number_of_colors))
-conv, result_im = convolute_pixel_kernel(bitand_mask, bitand_thin)
+# cv2.imwrite('colormap2.png', show_crack_color(number_of_colors))
+
+# result
+# conv, result_im = convolute_pixel_kernel(bitand_mask, bitand_thin)
+conv, result_im = convolute_pixel_avg(bitand_mask, bitand_thin)
 filtered = conv[conv>0.0]
 avg_pix = filtered.mean()
 min_pix = filtered.min()
@@ -130,4 +203,19 @@ print('mm per pixel :', crack.calc_pix(93,40,9216))
 print('avg width : ', crack.calc_pix(93,40,9216)*avg_pix)
 print('min width : ', crack.calc_pix(93,40,9216)*min_pix)
 print('max width : ', crack.calc_pix(93,40,9216)*max_pix)
+
+def mouse_callback(event, x, y, flags, param):
+    if event == cv2.EVENT_MOUSEMOVE:
+        copy_conv = param.copy()
+        if copy_conv[y, x]>0:
+            copy_img = result_im.copy()
+            size = copy_conv[y, x]
+            color = hsv2rgb(clamp((number_of_colors - size) / number_of_colors, 0, 1), 1, 1)
+            # copy_img = cv2.ellipse(copy_img, (x,y), (int(size),int(size)), 0, 0, 360, color, thickness=2)
+            copy_img = cv2.ellipse(copy_img, (x, y), (15,15), 0, 0, 360, color, thickness=1)
+            crack_width = crack.calc_pix(93, 40, 9216) * (size)
+            copy_img = cv2.putText(copy_img, str(crack_width)[:4], (0,20), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (color), 1, cv2.LINE_AA)
+            cv2.imshow('result', copy_img)
+
+cv2.setMouseCallback('result', mouse_callback, conv)
 cv2.waitKey(0)
