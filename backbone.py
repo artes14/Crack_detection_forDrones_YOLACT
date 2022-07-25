@@ -140,7 +140,7 @@ class ResNetBackbone(nn.Module):
 
     def init_backbone(self, path):
         """ Initializes the backbone weights for training. """
-        state_dict = torch.load(path)
+        state_dict = torch.load(path, map_location='cuda:0')
 
         # Replace layer1 -> layers.0 etc.
         keys = list(state_dict)

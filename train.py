@@ -31,7 +31,7 @@ def str2bool(v):
 
 parser = argparse.ArgumentParser(
     description='Yolact Training Script')
-parser.add_argument('--batch_size', default=1, type=int,
+parser.add_argument('--batch_size', default=2, type=int,
                     help='Batch size for training')
 parser.add_argument('--resume', default=None, type=str,
                     help='Checkpoint state_dict file to resume training from. If this is "interrupt"'\
@@ -57,7 +57,7 @@ parser.add_argument('--log_folder', default='logs/',
                     help='Directory for saving logs.')
 parser.add_argument('--config', default=None,
                     help='The config object to use.')
-parser.add_argument('--save_interval', default=1000, type=int,
+parser.add_argument('--save_interval', default=100000, type=int,
                     help='The number of iterations between saving the model.')
 parser.add_argument('--validation_size', default=500, type=int,
                     help='The number of images to use for validation.')

@@ -179,7 +179,7 @@ crack_dataset = dataset_base.copy({
     'name': 'Crack',
 
     'train_images': './crack_dataset/train/images/',
-    'train_info': './crack_dataset/new_masks.json',
+    'train_info': './crack_dataset/train.json',
 
     'valid_images': './crack_dataset/test/images/',
     'valid_info': './crack_dataset/test.json',
@@ -872,8 +872,8 @@ crack_darknet53_config = yolact_darknet53_config.copy({
 
 # Default config
 # cfg = yolact_base_config.copy()
-cfg = crack_config.copy()
-# cfg = crack_res50_config.copy() # why attempted to set storage error?
+# cfg = crack_config.copy()
+cfg = crack_res50_config.copy() # why attempted to set storage error?
 # cfg = crack_darknet53_config.copy()
 # cfg = crack_plus_base_config.copy()
 
