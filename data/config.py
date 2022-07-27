@@ -868,14 +868,24 @@ crack_darknet53_config = yolact_darknet53_config.copy({
     'num_classes': 2,
     'max_size': 448,
 })
+crack_darknet2_config = yolact_darknet53_config.copy({
+    'pred_aspect_ratios': [ [[1, 1/2, 2]] ]*5,
+    'discard_mask_area': 200,
+    'name': 'crack_darknet2',
+    'has_gt': True,
+    'dataset': crack_dataset,
+    'num_classes': 2,
+    'max_size': 448,
+})
 
 
 # Default config
 # cfg = yolact_base_config.copy()
 # cfg = crack_config.copy()
-cfg = crack_res50_config.copy() # why attempted to set storage error?
+# cfg = crack_res50_config.copy() # why attempted to set storage error?
 # cfg = crack_darknet53_config.copy()
 # cfg = crack_plus_base_config.copy()
+cfg = crack_darknet2_config.copy()
 
 def set_cfg(config_name:str):
     """ Sets the active config. Works even if cfg is already imported! """

@@ -42,7 +42,7 @@ def parse_args(argv=None):
     parser = argparse.ArgumentParser(
         description='YOLACT COCO Evaluation')
     parser.add_argument('--trained_model',
-                        default='weights/crack_769_3200000.pth', type=str,
+                        default='weights/crack_darknet53_740_1550000.pth', type=str,
                         help='Trained state_dict file path to open. If "interrupt", this will open the interrupt file.')
     parser.add_argument('--top_k', default=5, type=int,
                         help='Further restrict the number of predictions to parse')
@@ -104,7 +104,7 @@ def parse_args(argv=None):
                         help='A path to a video to evaluate on. Passing in a number will use that index webcam.')
     parser.add_argument('--video_multiframe', default=1, type=int,
                         help='The number of frames to evaluate in parallel to make videos play at higher fps.')
-    parser.add_argument('--score_threshold', default=0.99, type=float,
+    parser.add_argument('--score_threshold', default=0.35, type=float,
                         help='Detections with a score under this threshold will not be considered. This currently only works in display  mode.')
     parser.add_argument('--dataset', default=None, type=str,
                         help='If specified, override the dataset specified in the config with this one (example: coco2017_dataset).')
@@ -651,7 +651,7 @@ def evalimage(net:Yolact, path:str, save_path:str=None):
 
 def evalcropimage(net: Yolact, cropsize: int, path: str, save_path: str = None):
     cnt=0
-    for img in imgmod.crop_image(path, cropsize):
+    for img in imgmod.crop_image_fromfile(path, cropsize):
         frame = torch.from_numpy(img).cuda().float()
         batch = FastBaseTransform()(frame.unsqueeze(0))
         preds = net(batch)
@@ -962,8 +962,6 @@ def evaluate(net:Yolact, dataset, train_mode=False):
     frame_times = MovingAverage()
     dataset_size = len(dataset) if args.max_images < 0 else min(args.max_images, len(dataset))
     progress_bar = ProgressBar(30, dataset_size)
-
-    print()
 
     if not args.display and not args.benchmark:
         # For each class and iou, stores tuples (score, isPositive)
