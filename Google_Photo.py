@@ -12,6 +12,7 @@ import wget
 SCOPES = ["https://www.googleapis.com/auth/photoslibrary",
           "https://www.googleapis.com/auth/photoslibrary.readonly",
           "https://www.googleapis.com/auth/photoslibrary.readonly.appcreateddata"]
+# TODO: get this to work as a class
 def getauth():
     #OAuth2 authentication process
     print("OAuth2 authentication process...")
@@ -30,29 +31,33 @@ def set_cloud_service(startDatetime:datetime.datetime, endDatetime:datetime.date
     print("Search image files...")
     # dtToday = datetime.date.today()
     # dt7DaysAgo = dtToday - datetime.timedelta(days=dtDates, hours=dtHours)
-
-    results = service.mediaItems().search(
-        body={
-            "filters": {
-                "dateFilter": {
-                    "ranges": [{
-                            # "startDate": {"year": dt7DaysAgo.year, "month": dt7DaysAgo.month, "day": dt7DaysAgo.day},
-                            # "startDate": {"year": dtToday.year, "month": dtToday.month, "day": dtToday.day},
-                        "startDate": {"year": startDatetime.year, "month": startDatetime.month, "day": startDatetime.day},
-                            # "endDate": {"year": dtToday.year, "month": dtToday.month, "day": dtToday.day}
-                        "endDate": {"year": endDatetime.year, "month": endDatetime.month, "day": endDatetime.day}
-                        }
-                    ]
+    nextPageToken = 'temp'
+    items = []
+    while nextPageToken != '':
+        nextPageToken = '' if nextPageToken == 'temp' else nextPageToken
+        results = service.mediaItems().search(
+            body={
+                "pageSize":100, # increase pageSize to get more images
+                "filters": {
+                    "dateFilter": {
+                        "ranges": [{
+                                # "startDate": {"year": dt7DaysAgo.year, "month": dt7DaysAgo.month, "day": dt7DaysAgo.day},
+                                # "startDate": {"year": dtToday.year, "month": dtToday.month, "day": dtToday.day},
+                            "startDate": {"year": startDatetime.year, "month": startDatetime.month, "day": startDatetime.day},
+                                # "endDate": {"year": dtToday.year, "month": dtToday.month, "day": dtToday.day}
+                            "endDate": {"year": endDatetime.year, "month": endDatetime.month, "day": endDatetime.day}
+                            }
+                        ]
+                    },
+                    "mediaTypeFilter": { # mediaTypes: ALL_MEDIA, VIDEO, PHOTO
+                        "mediaTypes": ["PHOTO"]
+                    }
                 },
-                "mediaTypeFilter": { # mediaTypes: ALL_MEDIA, VIDEO, PHOTO
-                    "mediaTypes": ["PHOTO"]
-                }
+                "pageToken":nextPageToken,
             }
-        }
-    ).execute()
-    # localtz=pytz.timezone('Asia/Seoul')
-    items = results.get("mediaItems", [])
-    # print(items)
+        ).execute()
+        items.extend(results.get("mediaItems", []))
+        nextPageToken = results.get("nextPageToken", '')
     if not items:
         print("No media found.")
         return None
@@ -68,8 +73,10 @@ def downloadfile_fromcloud(startDatetime:datetime.datetime, endDatetime:datetime
     else:
         shutil.rmtree(savefolder)
         os.mkdir(savefolder)
-
-    items = set_cloud_service(startDatetime, endDatetime)
+    if startDatetime.date() == endDatetime.date():
+        items = set_cloud_service(startDatetime, endDatetime.__add__(datetime.timedelta(days=1)))
+    else:
+        items = set_cloud_service(startDatetime, endDatetime)
     if items is None:
         return
     for index,item in enumerate(items):
@@ -79,6 +86,13 @@ def downloadfile_fromcloud(startDatetime:datetime.datetime, endDatetime:datetime
         baseUrl_str=baseUrl.decode('utf-8')+'=d' #'=d' means with metadata & full size
         #baseUrl parameter reference :  https://developers.google.com/photos/library/guides/access-media-items#base-urls
         filename_str=filename.decode('utf-8')
+        filename_tostr = ''.join(filename_str)
+        get_time = ''.join(filename_tostr.split('.')[:-1])
+        get_time = ''.join(get_time.split('_'))
+        starttime = int(startDatetime.strftime("%Y%m%d%H%M%S"))
+        endtime = int(endDatetime.strftime("%Y%m%d%H%M%S"))
+        if starttime>int(get_time) or endtime<int(get_time):
+            continue
 
         # check duplication & download
         file_full_path = os.path.join(savefolder, filename_str)

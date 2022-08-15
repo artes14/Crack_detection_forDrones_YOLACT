@@ -27,7 +27,7 @@ from PIL import Image
 
 import matplotlib.pyplot as plt
 import cv2
-import imgmod
+import imgmod, calc_crack
 
 # google drive modules
 import Google_Photo, datetime
@@ -118,7 +118,7 @@ def parse_args(argv=None):
                         help='When saving a video, emulate the framerate that you\'d get running in real-time mode.')
     parser.add_argument('--cropsize', default=448, type=int,
                         help='When in need of cropping images to evaluate in small pieces')
-    parser.add_argument('--ignore_masksize', default=100, type=int,
+    parser.add_argument('--ignore_masksize', default=400, type=int,
                         help='Ignore masks if pixel numbers are smaller than this.')
     parser.add_argument('--width', default=False, dest='width', action='store_true',
                         help='Calculate average width in pixels and mm. It will be shown on the image')
@@ -137,7 +137,7 @@ def parse_args(argv=None):
 
 color_cache = defaultdict(lambda: {})
 
-def prep_display(dets_out, img, h, w, thres = 0.4, undo_transform=True, class_color=False, mask_alpha=0.45, fps_str=''):
+def prep_display(dets_out, img, h, w, thres = 0.2, undo_transform=True, class_color=False, mask_alpha=0.2, fps_str=''):
     """
     Note: If undo_transform=False then im_h and im_w are allowed to be None.
     """
@@ -279,52 +279,103 @@ def prep_display(dets_out, img, h, w, thres = 0.4, undo_transform=True, class_co
 
 
 def evalcropimage(net: Yolact, cropsize: int, image, save_path: str):
+    t = time.time()
     # crop image
     img_arr, x, y = imgmod.crop_image(image, cropsize)
-    out_arr, mask_arr = [],[]
+    out_arr, mask_arr, result_arr = [],[],[]
+    tmp_arr = []
+    data_arr = []
     # run eval on cropped images
     print('cropping...')
     for img in img_arr:
         frame = torch.from_numpy(img).cuda().float()
         batch = FastBaseTransform()(frame.unsqueeze(0))
         preds = net(batch)
-        img_numpy, mask = prep_display(preds, frame, None, None, undo_transform=False)
+        img_numpy, mask = prep_display(preds, frame, None, None,thres= 0.25, undo_transform=False)
         if not mask.any():
             h, w, _ = img_numpy.shape
             mask = np.zeros((h, w, 3), np.uint8)
+            data = [0,0,0]
+            print('nothing to calculate')
+            img_result = img
+            mask_result=mask.copy()
+        else:
+            data, img_result, mask_result = calc_crack.calc_crackwidth(img, mask)
+            mask_result = cv2.cvtColor(mask_result, cv2.COLOR_GRAY2RGB)
+        tmp_arr.append(mask_result)
         out_arr.append(img_numpy)
         mask_arr.append(mask)
+        result_arr.append(img_result)
+        data_arr.append(data)
+
+    t2 = time.time()
+    t2 = t2 - t
+    print(t2, ' seconds elapsed total......')
     print('end crop, concatenating...')
     def concat_tile(im_list_2d):
         return cv2.vconcat([cv2.hconcat(im_list_h) for im_list_h in im_list_2d])
     tmp_i = np.ndarray((x,y)).tolist()
     tmp_m = np.ndarray((x,y)).tolist()
+    tmp_r = np.ndarray((x,y)).tolist()
+    tmp_t = np.ndarray((x,y)).tolist()
     for idx in range(x):
         for idy in range(y):
             tmp_i[idx][idy] = out_arr[idx*y+idy]
             tmp_m[idx][idy] = mask_arr[idx*y+idy]
+            tmp_r[idx][idy] = result_arr[idx*y+idy]
+            tmp_t[idx][idy] = tmp_arr[idx*y+idy]
     img_tile = concat_tile(tmp_i)
     mask_tile = concat_tile(tmp_m)
+    result_tile = concat_tile(tmp_r)
+    tmp_tile = concat_tile(tmp_t)
     cv2.imwrite(save_path+'.png', img_tile)
-    cv2.imwrite(save_path+'_mask.png', mask_tile)
+    cv2.imwrite(save_path+'_masky.png', mask_tile)
+    cv2.imwrite(save_path+'_result.png', result_tile)
+    cv2.imwrite(save_path+'_maskand.png', tmp_tile)
+    with open(save_path+'.txt', 'w') as f:
+        for data in data_arr:
+            f.write(str(data[0])+','+str(data[1])+','+str(data[2])+'\n')
     print('saved... '+save_path)
     return img_tile, mask_tile
 
 def evalimages(net:Yolact, input_folder:str, output_folder:str):
     if not os.path.exists(output_folder):
         os.mkdir(output_folder)
-
-    print()
-    for p in Path(input_folder).glob('*'): 
+    # with open(output_folder+'/location.txt', 'r') as f:
+    #     lines = f.readlines()
+    #     filenames, newnames = [],[]
+    #     for line in lines:
+    #         split = line.strip().split(',')
+    #         filename = split[0]
+    #         filenames.append({'foldername':filename.split('_')[0],
+    #                           'filename':filename,
+    #                           'newname':filename.split('_')[-1]+'x'+split[1]+'y'+split[2]})
+    #
+    #     print()
+    #     for p in Path(input_folder).glob('*'):
+    #         path = str(p)
+    #         name = os.path.basename(path)
+    #         name = '.'.join(name.split('.')[:-1])
+    #         has_filename = next((item for item in filenames if item['filename']==name), False)
+    #         if has_filename == False:
+    #             continue
+    #         else:
+    #             newname = has_filename['newname']
+    #             if not os.path.exists(output_folder+'/'+has_filename['foldername']):
+    #                 os.mkdir(output_folder+'/'+has_filename['foldername'])
+    #         out_path = os.path.join(output_folder+'/'+has_filename['foldername'], newname)
+    for p in Path(input_folder).glob('*'):
         path = str(p)
         name = os.path.basename(path)
         name = '.'.join(name.split('.')[:-1])
-        out_path = os.path.join(output_folder,name)
+        if not os.path.exists(output_folder):
+            os.mkdir(output_folder)
         img = cv2.imread(path)
+        out_path = os.path.join(output_folder, name)
         if img.shape[1] > args.cropsize or img.shape[0] > args.cropsize:
             evalcropimage(net, 448, img, out_path)
 
-    print('Done.')
+        print('Done.')
 
 
 
@@ -340,8 +391,8 @@ def evaluate(net:Yolact, imagepath:str, savepath:str):
 
 # if __name__ == '__main__':
 def eval_crackwidth(trained_model, config, imagepath:str='cloudImages', savepath:str='data/crack_newtest',
-                    startDatetime:datetime.datetime=datetime.datetime(2022, 5, 20),
-                    endDatetime:datetime.datetime=datetime.datetime(2022, 5, 22)):
+                    startDatetime:datetime.datetime=datetime.datetime(2022, 8, 4, 16, 14, 0),
+                    endDatetime:datetime.datetime=datetime.datetime(2022, 8, 4, 16, 16, 0)):
     # first download from google cloud
     Google_Photo.downloadfile_fromcloud(startDatetime, endDatetime, imagepath)
     parse_args()
@@ -351,8 +402,8 @@ def eval_crackwidth(trained_model, config, imagepath:str='cloudImages', savepath
         quit()
     else:
         if config is None:
+            # get model info from config file
             model_path = SavePath.from_str(trained_model)
-            # TODO: Bad practice? Probably want to do a name lookup instead.
             config = model_path.model_name + '_config'
             print('Config not specified. Parsed %s from the file name.\n' % args.config)
             set_cfg(config)
@@ -378,4 +429,4 @@ def eval_crackwidth(trained_model, config, imagepath:str='cloudImages', savepath
 
             evaluate(net, imagepath, savepath)
 
-eval_crackwidth('weights/crack_769_3199000.pth', None, imagepath='cloudImages')
+eval_crackwidth('weights/crack_769_3199000.pth', None, imagepath='cloudImages', savepath='data/adaptive')

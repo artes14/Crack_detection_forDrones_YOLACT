@@ -42,7 +42,7 @@ def save_crop_images(img_folder:str, output_folder:str, crop_size:int):
 
         print('Done.')
         cnt=0
-        for img in crop_image(path, crop_size):
+        for img in crop_image_fromfile(path, crop_size):
             output_path=out_path+'_'+str(cnt)+'.png'
             cv2.imwrite(output_path, img)
             cnt+=1
@@ -134,12 +134,12 @@ def blur(img):
     mask = cv2.blur(mask, (100, 100), 10)
     mask = cv2.dilate(mask, kernel, 100)
     mask = cv2.blur(mask, (100, 100), 10)
-    #cv2.dilate(mask, kernel, 100)
+    # cv2.dilate(mask, kernel, 100)
     green=cv2.bitwise_and(img,img, mask)
     green=cv2.erode(green, kernel,100)
     cv2.imwrite('data/eval3/crack_9_mdil.jpg', mask)
-    #mask=cv2.blur(mask,(15,15),10)
-    #mask2 = cv2.blur(mask, (60, 60), 0)
+    # mask=cv2.blur(mask,(15,15),10)
+    # mask2 = cv2.blur(mask, (60, 60), 0)
     mask2 = cv2.blur(mask,(50, 50),0)
 
     mask_rgb=img.copy()
