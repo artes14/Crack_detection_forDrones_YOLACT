@@ -35,9 +35,9 @@ def otsu_thres( img):
     image = np.copy(img)
     # blur = cv2.medianBlur(image, 3, 0)
     blur = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    # blur = cv2.GaussianBlur(blur,(5,5),0)
-    img_thres = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 20, 5)
-    # ret, img_thres = cv2.threshold(blur, 150, 255, cv2.THRESH_BINARY)
+    blur = cv2.GaussianBlur(blur,(5,5),0)
+    # img_thres = cv2.adaptiveThreshold(blur, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 20, 5)
+    ret, img_thres = cv2.threshold(blur, 150, 255, cv2.THRESH_BINARY)
     img_thres = cv2.dilate(img_thres, np.ones((3,3),np.uint8))
     # img_thres=cv2.erode(img_thres,np.ones((3,3),np.uint8))
     ret=0

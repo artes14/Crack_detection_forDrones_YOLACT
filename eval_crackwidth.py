@@ -391,8 +391,8 @@ def evaluate(net:Yolact, imagepath:str, savepath:str):
 
 # if __name__ == '__main__':
 def eval_crackwidth(trained_model, config, imagepath:str='cloudImages', savepath:str='data/crack_newtest',
-                    startDatetime:datetime.datetime=datetime.datetime(2022, 8, 4, 16, 14, 0),
-                    endDatetime:datetime.datetime=datetime.datetime(2022, 8, 4, 16, 16, 0)):
+                    startDatetime:datetime.datetime=datetime.datetime(2022, 7, 28, 00, 0, 0),
+                    endDatetime:datetime.datetime=datetime.datetime(2022, 7, 29, 0, 0, 0)):
     # first download from google cloud
     Google_Photo.downloadfile_fromcloud(startDatetime, endDatetime, imagepath)
     parse_args()
@@ -429,4 +429,4 @@ def eval_crackwidth(trained_model, config, imagepath:str='cloudImages', savepath
 
             evaluate(net, imagepath, savepath)
 
-eval_crackwidth('weights/crack_769_3199000.pth', None, imagepath='cloudImages', savepath='data/adaptive')
+eval_crackwidth('weights/crack_769_3199000.pth', None, imagepath='cloudImages', savepath='data/ASDF')
