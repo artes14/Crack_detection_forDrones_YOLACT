@@ -119,7 +119,7 @@ def calc_crackwidth(img_i, img_m):
     img_yolact = cv2.dilate(img_yolact, np.ones((7,7),np.uint8))
     _, img_yolact_thres = cv2.threshold(img_yolact, 0, 255, cv2.THRESH_OTSU)
     img_bitand = cv2.bitwise_and(img_thresh, img_yolact_thres)
-    img_yolact_thres_thin = thinning(img_yolact_thres)
+    # img_yolact_thres_thin = thinning(img_yolact_thres)
     img_bitand_thin =thinning(img_bitand)
     mask_result = img_bitand.copy()
     # img_thin_bitand = cv2.bitwise_and(img_yolact_thres_thin, img_bitand_thin)
@@ -545,12 +545,13 @@ def convolute_pixel_grd(img_origin, img_eval, thin):
 
     return arr_out, img_out
 
-def show_crack_color(img_origin, color_num):
-    color_show = img_origin.copy()
-    colshow = color_show[:color_num*10, :100]
-    colshow = cv2.resize(colshow, dsize = (100,color_num*20))
+def show_crack_color( color_num):
+    # color_show = img_origin.copy()
+    colshow = np.zeros((color_num*20, 100, 3), dtype=np.uint8)
+    # colshow = color_show[:color_num*10, :100]
+    # colshow = cv2.resize(colshow, dsize = (100,color_num*20))
     for i in range(color_num):
-        crack_width = calc_pix(93,40,9216)*(2*i+1)
+        crack_width = calc_pix(camerainfo['angleW'], camerainfo['distance'], camerainfo['pixelW'])*i
         # crack_width = crack.calc_pix(93,40,9216)*(i)
         col = hsv2rgb(clamp((color_num-i)/color_num, 0, 1),1,1)
         colshow = cv2.rectangle(colshow, (0,i*20), (100,(i+1)*20), col, -1)
@@ -559,8 +560,8 @@ def show_crack_color(img_origin, color_num):
 
 
 # cv2.imshow('color map per width', show_crack_color(number_of_colors))
-# # cv2.imwrite('colormap2.png', show_crack_color(number_of_colors))
-#
+cv2.imwrite('colormap_A52.png', show_crack_color(number_of_colors))
+
 # # result
 # # conv, result_im = convolute_pixel_kernel(bitand_mask, bitand_thin)
 # # conv, result_im = convolute_pixel_avg(bitand_mask, bitand_thin)

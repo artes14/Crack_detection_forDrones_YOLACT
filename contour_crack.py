@@ -11,38 +11,21 @@ import colorsys
 from scipy.stats import sem
 import imgmod
 
-# 20220804_161427_29
 # 20220804_161432_29
 # 20220804_161427_45
 # 20220804_161436_39  # 84
 # 20220804_161436_40  # 82
 # 20220804_161438_34  # 85
-# 20220804_161427_58
-# 20220804_161427_40
-#
 
-
-
-img_origin = cv2.imread('data/cloud_croptest/20220804_161427_29.png', cv2.IMREAD_GRAYSCALE)
-(iH, iW) = img_origin.shape[:2]
+img = cv2.imread('data/cloud_croptest/20220804_161436_39.png', cv2.IMREAD_GRAYSCALE)
+(iH, iW) = img.shape[:2]
 # create a mask
-mask = cv2.imread('data/cloud_croptest/20220804_161427_29_frame.png', cv2.IMREAD_GRAYSCALE)
-cv2.imwrite('tests/mask.png', mask)
-kernl = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (30, 30))
-kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (20,20))
-kerns = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5,5))
-
-# circular kernel
-mask_dil = cv2.dilate(mask, kernl)
-mask_dil = cv2.morphologyEx(mask_dil, cv2.MORPH_CLOSE, kernl)
-cv2.imwrite('tests/mask_dil.png', mask_dil)
-mask_ero = cv2.dilate(mask, kerns)
-mask_ero = cv2.morphologyEx(mask_ero, cv2.MORPH_CLOSE, kernl)
-cv2.imwrite('tests/mask_ero.png', mask_ero)
-thin=cv2.ximgproc.thinning(mask_dil, thinningType=cv2.ximgproc.THINNING_GUOHALL)
-hist_origin = cv2.calcHist([img_origin],[0],None,[256],[0,256])
+mask = cv2.imread('data/cloud_croptest/20220804_161436_39_frame.png', cv2.IMREAD_GRAYSCALE)
+mask = cv2.dilate(mask, np.ones((20,20),np.uint8))
+thin=cv2.ximgproc.thinning(mask, thinningType=cv2.ximgproc.THINNING_GUOHALL)
+hist_origin = cv2.calcHist([img],[0],None,[256],[0,256])
 # gaussian blur original image
-img = cv2.GaussianBlur(img_origin, (3,3), sigmaX=0, sigmaY=0)
+img = cv2.GaussianBlur(img, (3,3), sigmaX=0, sigmaY=0)
 
 # equalize image
 # img = cv2.equalizeHist(img)
@@ -59,45 +42,27 @@ img_cla = cv2.cvtColor(img_cla, cv2.COLOR_BGR2YUV)
 clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(4,4))
 img_cla[:,:,0] = clahe.apply(img_cla[:,:,0])+10
 img = cv2.cvtColor(img_cla, cv2.COLOR_YUV2BGR)
-
-# Background subtractor
 # sub = cv2.createBackgroundSubtractorKNN(history=5)
 # newmask = sub.apply(img)
 
-masked_img = cv2.bitwise_and(img,img,mask = mask_dil)
+masked_img = cv2.bitwise_and(img,img,mask = mask)
 masked_img = cv2.cvtColor(masked_img, cv2.COLOR_BGR2GRAY)
 # Calculate histogram with mask and without mask
 # Check third argument for mask
 hist_full = cv2.calcHist([img],[0],None,[256],[0,256])
-hist_mask = cv2.calcHist([img],[0],masked_img,[256],[0,256])
-result = cv2.morphologyEx(img_origin, cv2.MORPH_BLACKHAT, kernel)
-result = cv2.subtract(img_origin, result)
-hist_blackhat = cv2.calcHist([result],[0],None,[256],[0,256])
-# result = cv2.cvtColor(result, cv2.COLOR_BGR2GRAY)
-result = cv2.bitwise_and(result,result,mask = mask_dil)
-_, result = cv2.threshold(result, 0, 255, cv2.THRESH_OTSU)
-plt.subplot(231), plt.imshow(img_origin, 'gray')
+hist_mask = cv2.calcHist([img],[0],mask,[256],[0,256])
+plt.subplot(221), plt.imshow(img, 'gray')
 # plt.subplot(222), plt.imshow(mask,'gray')
-plt.subplot(233), plt.imshow(masked_img, 'gray')
+plt.subplot(223), plt.imshow(masked_img, 'gray')
 sk_list = []
 _, threshold = cv2.threshold(masked_img, 0, 255, cv2.THRESH_OTSU)
 print(_)
 # threshold = cv2.adaptiveThreshold(masked_img, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 5,10)
 # threshold = cv2.Canny(masked_img, 180, 250)
 # threshold = cv2.Sobel(masked_img, cv2.CV_64F, dx=0, dy=1, ksize=3)
-plt.subplot(232), plt.imshow(img, 'gray')
-plt.subplot(234), # plt.imshow(threshold, 'gray')
-plt.plot(hist_full), plt.plot(hist_mask), plt.plot(hist_blackhat)
-threshold = cv2.bitwise_not(threshold)
-threshold = cv2.bitwise_and(threshold, mask_ero)
-plt.subplot(235), plt.imshow(threshold)
-# result = cv2.bitwise_and(threshold, mask_ero)
-result = cv2.bitwise_not(result)
-cv2.imwrite('tests/not.png', result)
-result = cv2.bitwise_and(result, mask_ero)
-cv2.imwrite('tests/and.png', result)
-# result = cv2.morphologyEx(result, cv2.MORPH_OPEN, kernel)
-plt.subplot(236), plt.imshow(result)
+plt.subplot(222), plt.imshow(threshold, 'gray')
+plt.subplot(224), # plt.imshow(threshold, 'gray')
+plt.plot(hist_full), plt.plot(hist_mask), plt.plot(hist_origin)
 plt.show()
 
 # for y in np.arange(0, iH):

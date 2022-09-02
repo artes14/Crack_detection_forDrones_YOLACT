@@ -12,7 +12,7 @@ import re
 import pycocotools.coco as coco
 
 root_dir = '../crack_dataset/'
-image_dir = os.path.join(root_dir, 'train/images/')
+image_dir = os.path.join(root_dir, 'train/imag2314233es/')
 mask_dir = os.path.join(root_dir, 'train/masks/')
 
 
@@ -113,7 +113,6 @@ for idx, data in enumerate(images):
 
     coco_format["categories"] = create_category_annotation(category_ids)
     coco_format["images"], coco_format["annotations"], annotation_cnt = imgs, annos, annotation_id
-
 
     tmp_cocodir = "../crack_dataset/{}.json".format('tmp_masks')
     cocodir = "../crack_dataset/{}.json".format('new_masks')

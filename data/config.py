@@ -175,18 +175,29 @@ pascal_sbd_dataset = dataset_base.copy({
 })
 
 CRACK_CLASSES = ("crack")
+CRACKROBOFLOW_CLASSES = ("crack", "spalling")
 crack_dataset = dataset_base.copy({
     'name': 'Crack',
 
     'train_images': './crack_dataset/train/images/',
-    'train_info': './crack_dataset/train.json',
+    'train_info': './crack_dataset/train_.json',
 
     'valid_images': './crack_dataset/test/images/',
     'valid_info': './crack_dataset/test.json',
 
     'class_names': CRACK_CLASSES,
 })
+crackRoboflow_dataset = dataset_base.copy({
+    'name': 'CrackRoboflow',
 
+    'train_images': '../../Bridge_crack_coco/train/',
+    'train_info': '../../Bridge_crack_coco/train.json',
+
+    'valid_images': '../../Bridge_crack_coco/valid/',
+    'valid_info': '../../Bridge_crack_coco/valid.json',
+
+    'class_names': CRACKROBOFLOW_CLASSES,
+})
 
 
 # ----------------------- TRANSFORMS ----------------------- #
@@ -877,13 +888,20 @@ crack_darknet2_config = yolact_darknet53_config.copy({
     'num_classes': 2,
     'max_size': 448,
 })
+crackroboflow_res50_config = yolact_resnet50_config.copy({
+    'name': 'crackroboflow_res50',
+    'has_gt': True,
+    'dataset': crackRoboflow_dataset,
+    'num_classes': 3,
+    'max_size': 448,
+})
 
 
 # Default config
 # cfg = yolact_base_config.copy()
 # cfg = crack_config.copy()
-cfg = crack_res50_config.copy() # why attempted to set storage error?
-# cfg = crack_darknet53_config.copy()
+# cfg = crack_res50_config.copy() # why attempted to set storage error?
+cfg = crackroboflow_res50_config.copy()
 # cfg = crack_plus_base_config.copy()
 # cfg = crack_darknet2_config.copy()
 
@@ -908,7 +926,7 @@ def set_dataset_path(dataset_path:str):
     cfg.dataset=crack_dataset.copy({
     # Training images and annotations
     'train_images': '{}/train/images/'.format(dataset_path),
-    'train_info':   '{}/train.json'.format(dataset_path),
+    'train_info':   '{}/train_.json'.format(dataset_path),
 
     # Validation images and annotations.
     'valid_images': '{}/test/images/'.format(dataset_path),
