@@ -12,7 +12,7 @@ import re
 import pycocotools.coco as coco
 
 root_dir = '../crack_dataset/'
-image_dir = os.path.join(root_dir, 'train/images/')
+image_dir = os.path.join(root_dir, 'train/imag2314233es/')
 mask_dir = os.path.join(root_dir, 'train/masks/')
 
 
@@ -114,9 +114,11 @@ for idx, data in enumerate(images):
     coco_format["categories"] = create_category_annotation(category_ids)
     coco_format["images"], coco_format["annotations"], annotation_cnt = imgs, annos, annotation_id
 
-    cocodir="../crack_dataset/{}.json".format('new_masks')
+    tmp_cocodir = "../crack_dataset/{}.json".format('tmp_masks')
+    cocodir = "../crack_dataset/{}.json".format('new_masks')
     with open(cocodir, "w") as outfile:
         json.dump(coco_format, outfile)
+
 
 
     # 이미지 확인용
@@ -124,6 +126,7 @@ for idx, data in enumerate(images):
     coco_file=coco.COCO(cocodir)
     annIds = coco_file.getAnnIds(imgIds=[image_id-1], catIds=[1], iscrowd=None)
     anns = coco_file.loadAnns(annIds)
+
 
     for i, ann in enumerate(anns):
         segs = ann["segmentation"]

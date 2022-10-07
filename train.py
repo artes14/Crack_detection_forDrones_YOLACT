@@ -31,7 +31,7 @@ def str2bool(v):
 
 parser = argparse.ArgumentParser(
     description='Yolact Training Script')
-parser.add_argument('--batch_size', default=2, type=int,
+parser.add_argument('--batch_size', default=1, type=int,
                     help='Batch size for training')
 parser.add_argument('--resume', default=None, type=str,
                     help='Checkpoint state_dict file to resume training from. If this is "interrupt"'\
@@ -57,7 +57,7 @@ parser.add_argument('--log_folder', default='logs/',
                     help='Directory for saving logs.')
 parser.add_argument('--config', default=None,
                     help='The config object to use.')
-parser.add_argument('--save_interval', default=100000, type=int,
+parser.add_argument('--save_interval', default=1000, type=int,
                     help='The number of iterations between saving the model.')
 parser.add_argument('--validation_size', default=500, type=int,
                     help='The number of images to use for validation.')
@@ -81,7 +81,7 @@ parser.add_argument('--no_autoscale', dest='autoscale', action='store_false',
                     help='YOLACT will automatically scale the lr and the number of iterations depending on the batch size. Set this if you want to disable that.')
 parser.add_argument('--dataset_path', default=None,
                     help='In case of changes in image location. Leave as None to read this from config')
-parser.add_argument('--run_name', default='crack_resnet5', type=str,
+parser.add_argument('--run_name', default='crack_base', type=str,
                     help='Saving names for wandb. Default name is yolact-tr.')
 parser.set_defaults(keep_latest=False, log=True, log_gpu=False, interrupt=True, autoscale=True)
 args = parser.parse_args()

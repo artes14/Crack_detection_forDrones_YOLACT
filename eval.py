@@ -42,7 +42,7 @@ def parse_args(argv=None):
     parser = argparse.ArgumentParser(
         description='YOLACT COCO Evaluation')
     parser.add_argument('--trained_model',
-                        default='weights/crack_769_3200000.pth', type=str,
+                        default='weights/crack_769_3199000.pth', type=str,
                         help='Trained state_dict file path to open. If "interrupt", this will open the interrupt file.')
     parser.add_argument('--top_k', default=5, type=int,
                         help='Further restrict the number of predictions to parse')
@@ -103,7 +103,8 @@ def parse_args(argv=None):
     parser.add_argument('--video', default=None, type=str,
                         help='A path to a video to evaluate on. Passing in a number will use that index webcam.')
     parser.add_argument('--video_multiframe', default=1, type=int,
-                        help='The number of frames to evaluate in parallel to make videos play at higher fps.')
+                        help='The number of frames to ev'
+                             'aluate in parallel to make videos play at higher fps.')
     parser.add_argument('--score_threshold', default=0.99, type=float,
                         help='Detections with a score under this threshold will not be considered. This currently only works in display  mode.')
     parser.add_argument('--dataset', default=None, type=str,
@@ -116,7 +117,7 @@ def parse_args(argv=None):
                         help='When saving a video, emulate the framerate that you\'d get running in real-time mode.')
     parser.add_argument('--cropsize', default=448, type=int,
                         help='When in need of cropping images to evaluate in small pieces')
-    parser.add_argument('--ignore_masksize', default=100, type=int,
+    parser.add_argument('--ignore_masksize', default=400, type=int,
                         help='Ignore masks if pixel numbers are smaller than this.')
     parser.add_argument('--width', default=False, dest='width', action='store_true',
                         help='Calculate average width in pixels and mm. It will be shown on the image')
@@ -138,7 +139,7 @@ coco_cats = {} # Call prep_coco_cats to fill this
 coco_cats_inv = {}
 color_cache = defaultdict(lambda: {})
 
-def prep_display(dets_out, img, h, w,save_path, undo_transform=True, class_color=False, mask_alpha=0.45, fps_str=''):
+def prep_display(dets_out, img, h, w,save_path, undo_transform=True, class_color=False, mask_alpha=0.2, fps_str=''):
     """
     Note: If undo_transform=False then im_h and im_w are allowed to be None.
     """
@@ -651,7 +652,7 @@ def evalimage(net:Yolact, path:str, save_path:str=None):
 
 def evalcropimage(net: Yolact, cropsize: int, path: str, save_path: str = None):
     cnt=0
-    for img in imgmod.crop_image(path, cropsize):
+    for img in imgmod.crop_image_fromfile(path, cropsize):
         frame = torch.from_numpy(img).cuda().float()
         batch = FastBaseTransform()(frame.unsqueeze(0))
         preds = net(batch)
@@ -962,8 +963,6 @@ def evaluate(net:Yolact, dataset, train_mode=False):
     frame_times = MovingAverage()
     dataset_size = len(dataset) if args.max_images < 0 else min(args.max_images, len(dataset))
     progress_bar = ProgressBar(30, dataset_size)
-
-    print()
 
     if not args.display and not args.benchmark:
         # For each class and iou, stores tuples (score, isPositive)
