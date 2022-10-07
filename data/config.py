@@ -175,18 +175,29 @@ pascal_sbd_dataset = dataset_base.copy({
 })
 
 CRACK_CLASSES = ("crack")
+CRACKROBOFLOW_CLASSES = ("crack", "spalling")
 crack_dataset = dataset_base.copy({
     'name': 'Crack',
 
     'train_images': './crack_dataset/train/images/',
-    'train_info': './crack_dataset/train.json',
+    'train_info': './crack_dataset/train_.json',
 
     'valid_images': './crack_dataset/test/images/',
     'valid_info': './crack_dataset/test.json',
 
     'class_names': CRACK_CLASSES,
 })
+crackRoboflow_dataset = dataset_base.copy({
+    'name': 'CrackRoboflow',
 
+    'train_images': '../../Bridge_crack_coco/train/',
+    'train_info': '../../Bridge_crack_coco/train.json',
+
+    'valid_images': '../../Bridge_crack_coco/valid/',
+    'valid_info': '../../Bridge_crack_coco/valid.json',
+
+    'class_names': CRACKROBOFLOW_CLASSES,
+})
 
 
 # ----------------------- TRANSFORMS ----------------------- #
@@ -820,15 +831,15 @@ yolact_plus_resnet50_config = yolact_plus_base_config.copy({
 })
 #====================== CUSTOM ======================================================
 crack_config = yolact_base_config.copy({
-    'pred_aspect_ratios': [ [[1, 1/4, 4]] ]*5,
     'discard_mask_area': 500,
-    'name': 'crack_base',
+    'name': 'crack',
     'dataset': crack_dataset,
     'num_classes': 2,
     'max_size': 448,
 })
 crack_base_config = crack_config.copy({
-    'name': 'crack_base'
+    'name': 'crack_base',
+    'lr_steps': (300000, 600000, 700000, 750000),
 })
 crack_plus_base_config = yolact_plus_base_config.copy({
     'name': 'crack_plus_base',
@@ -851,8 +862,8 @@ crack_plus_resnet50_base_config = yolact_plus_resnet50_config.copy({
     'class_existence_alpha': 1,
 })
 crack_res50_config = yolact_resnet50_config.copy({
-    'pred_aspect_ratios': [ [[1, 1/4, 4]] ]*5,
-    'discard_mask_area': 400,
+    # 'pred_aspect_ratios': [ [[1, 1/4, 4]] ]*5,
+    # 'discard_mask_area': 400,
     'name': 'crack_res50',
     'has_gt': True,
     'dataset': crack_dataset,
@@ -868,14 +879,31 @@ crack_darknet53_config = yolact_darknet53_config.copy({
     'num_classes': 2,
     'max_size': 448,
 })
+crack_darknet2_config = yolact_darknet53_config.copy({
+    'pred_aspect_ratios': [ [[1, 1/2, 2]] ]*5,
+    'discard_mask_area': 200,
+    'name': 'crack_darknet2',
+    'has_gt': True,
+    'dataset': crack_dataset,
+    'num_classes': 2,
+    'max_size': 448,
+})
+crackroboflow_res50_config = yolact_resnet50_config.copy({
+    'name': 'crackroboflow_res50',
+    'has_gt': True,
+    'dataset': crackRoboflow_dataset,
+    'num_classes': 3,
+    'max_size': 448,
+})
 
 
 # Default config
 # cfg = yolact_base_config.copy()
 # cfg = crack_config.copy()
-cfg = crack_res50_config.copy() # why attempted to set storage error?
-# cfg = crack_darknet53_config.copy()
+# cfg = crack_res50_config.copy() # why attempted to set storage error?
+cfg = crackroboflow_res50_config.copy()
 # cfg = crack_plus_base_config.copy()
+# cfg = crack_darknet2_config.copy()
 
 def set_cfg(config_name:str):
     """ Sets the active config. Works even if cfg is already imported! """
@@ -898,7 +926,7 @@ def set_dataset_path(dataset_path:str):
     cfg.dataset=crack_dataset.copy({
     # Training images and annotations
     'train_images': '{}/train/images/'.format(dataset_path),
-    'train_info':   '{}/train.json'.format(dataset_path),
+    'train_info':   '{}/train_.json'.format(dataset_path),
 
     # Validation images and annotations.
     'valid_images': '{}/test/images/'.format(dataset_path),

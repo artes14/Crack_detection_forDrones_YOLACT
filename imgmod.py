@@ -7,7 +7,7 @@ import cv2
 import time
 import os
 from pathlib import Path
-def crop_image(img_path:str, crop_size:int, mode=None):
+def crop_image_fromfile(img_path:str, crop_size:int):
     img = cv2.imread(img_path)
     w,h,_=img.shape
     if crop_size>=w or crop_size>=h:
@@ -17,6 +17,17 @@ def crop_image(img_path:str, crop_size:int, mode=None):
         for y in range(0,h-crop_size,crop_size):
             crop_image.append(img[x:x+crop_size,y:y+crop_size])
     return crop_image
+
+def crop_image(img, crop_size:int):
+    w,h,_=img.shape
+    if crop_size>=w or crop_size>=h:
+        return img, 1, 1
+    crop_image=[]
+    dx, dy = (w/crop_size).__floor__(), (h/crop_size).__floor__()
+    for x in range(0, w - crop_size, crop_size):
+        for y in range(0, h - crop_size, crop_size):
+            crop_image.append(img[x:x + crop_size, y:y + crop_size])
+    return crop_image, dx, dy
 
 def save_crop_images(img_folder:str, output_folder:str, crop_size:int):
     if not os.path.exists(output_folder):
@@ -31,7 +42,7 @@ def save_crop_images(img_folder:str, output_folder:str, crop_size:int):
 
         print('Done.')
         cnt=0
-        for img in crop_image(path, crop_size):
+        for img in crop_image_fromfile(path, crop_size):
             output_path=out_path+'_'+str(cnt)+'.png'
             cv2.imwrite(output_path, img)
             cnt+=1
@@ -123,12 +134,12 @@ def blur(img):
     mask = cv2.blur(mask, (100, 100), 10)
     mask = cv2.dilate(mask, kernel, 100)
     mask = cv2.blur(mask, (100, 100), 10)
-    #cv2.dilate(mask, kernel, 100)
+    # cv2.dilate(mask, kernel, 100)
     green=cv2.bitwise_and(img,img, mask)
     green=cv2.erode(green, kernel,100)
     cv2.imwrite('data/eval3/crack_9_mdil.jpg', mask)
-    #mask=cv2.blur(mask,(15,15),10)
-    #mask2 = cv2.blur(mask, (60, 60), 0)
+    # mask=cv2.blur(mask,(15,15),10)
+    # mask2 = cv2.blur(mask, (60, 60), 0)
     mask2 = cv2.blur(mask,(50, 50),0)
 
     mask_rgb=img.copy()
